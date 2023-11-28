@@ -2,6 +2,8 @@
 \usepackage{amsmath,amssymb,amstext}
 \usepackage[margin=1in,letterpaper]{geometry}
 \usepackage{amsmath,amssymb}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
 
 \title{A introduction to lattice trapdoor}
 \author{Ganyu Xu (g66xu)}
@@ -198,13 +200,8 @@ This in equality bounds the length of the first base vector of the reduced basis
 In other words, the LLL reduction algorithm computes an approximation of the shortest vector within a factor of $\gamma \in O(\alpha^n)$. With specific choices of "bad" basis and sufficiently high dimension $n$, the basis reduction algorithm will not be able to provide meaningfully tight approximation of the shortest vector, making the shortest vector problem suitably hard for cryptographic applications.
 
 
-\section{Nearest plane algorithm}
-In this section we state the closest vector problem (CVP), which is a hard lattice problem that the GGH construction is based on. We will then discuss Babai's nearest plane algorithm, which can be used to approximate solutions to the CVP.
-
-Let $\mathcal{L}(B) \subseteq \mathbb{Z}^n$ be a full-rank lattice, and let $\mathbf{t} \in \mathbb{Z}^n$ be a target vector. The closest vector problem asks to find $\mathbf{v} \in \mathcal{L}(B)$ that minimizes $\Vert \mathbf{t} - \mathbf{v} \Vert$, where the norm is the Euclidean norm (over real numbers).
-
 \subsection{Fundamental regions}
-Before attempting the closest vector problem, we first introduce a highly relevant concept called the \textbf{fundamental region} of a lattice. A fundamental region $S$ is a subset of the (real) linear span of the basis such that it tiles the linear span of the basis and each tile contains exactly one lattice point. If we have a fundamental region $S$ defined, then each point in the linear span of the basis can be uniquely decomposed into the sum of a lattice point and a point in the fundamental region:
+A fundamental region $S$ is a subset of the (real) linear span of the basis such that it tiles the linear span of the basis and each tile contains exactly one lattice point. If we have a fundamental region $S$ defined, then each point in the linear span of the basis can be uniquely decomposed into the sum of a lattice point and a point in the fundamental region:
 
 $$
 \mathcal{L}(B) = \{S + B\mathbf{x} \mid \mathbf{x} \in \mathbb{Z}^n\}
@@ -222,7 +219,7 @@ $$
 \mathcal{C}(B) = \{B\mathbf{x} \mid \mathbf{x} \in [-\frac{1}{2}, \frac{1}{2})^n\}
 $$
 
-Computing the decomposition using the (centered) fundmental parallelpiped is easy. First compute $B^{-1}\mathbf{t}$ (over $\mathbb{R}$), then perform some kind of rounding (flooring or nearest integer) depending on whether the fundamental parallelpiped is centered or or not. $B\lfloor B^{-1}\mathbf{T} \rceil$ is the lattice point whose corresponding fundamental region contains the target. This is Babai's rounding algorithm. As we will see in later section, this algorithm works well if $B$ is short and orthogonal, but falls apart badly if $B$ is long and skewed.
+Computing the decomposition using the (centered) fundamental parallelpiped is easy. First compute $B^{-1}\mathbf{t}$ (over $\mathbb{R}$), then perform some kind of rounding (flooring or nearest integer) depending on whether the fundamental parallelpiped is centered or or not. $B\lfloor B^{-1}\mathbf{T} \rceil$ is the lattice point whose corresponding fundamental region contains the target. This is Babai's rounding algorithm. As we will see in later section, this algorithm works well if $B$ is short and orthogonal, but falls apart badly if $B$ is long and skewed.
 
 The Voronoi region is defined by the set of points in the linear span that are closer to $\mathbf{0}$ than to any other lattice points. There is some additional details that need to be specified to ensure that the Voronoi region properly closes and forms a partition of $\text{span}(B)$, which we will not discuss in details here. If we have an algorithm that can efficiently decompose $\mathbf{t} \in \text{span}(B)$ using the Voronoi region, then we automatically have a way to solve the closest vector problem. Unfortunately, no such algorithm is known.
 
@@ -239,16 +236,17 @@ Because $B^\ast$ is an orthogonal basis, it's easy to see that the sphere center
 \subsection{Babai's nearest plane algorithm}
 Babai's nearest plane algorithm, attributed to László Babai, is a recursive algorithm that can approximate the closest vector under a given basis to a target vector. More specifically, it returns a vector point $\mathbf{v}$ such that, if target vector is projected onto the orthogonalized basis, the projection is contained in $\mathbf{v} + \mathcal{C}(B^\ast)$. If the target vector is in the linear span of the basis, then the target vector itself is contained in $\mathbf{v} + \mathcal{C}(B^\ast)$.
 
-The algorithm $\text{NearestPlane}(B, \mathbf{t})$ takes a set of basis $B = [\mathbf{b}_1, \mathbf{b}_2, \ldots, \mathbf{b}_{n}]$ and a target vector $\mathbf{t}$, then performs the following procedure:
-
-\begin{enumerate}
-    \item If $B$ is an empty set of basis, return $\mathbf{0}$
-    \item $B^\ast \leftarrow \text{GramSchmidt}(B)$
-    \item $c \leftarrow \lfloor \frac{\langle\mathbf{t}, \mathbf{b}_n^\ast\rangle}{\langle\mathbf{b}_n^\ast, \mathbf{b}_n^\ast\rangle} \rceil$, where $\mathbf{b}_n^\ast$ is the last base vector in $B^\ast$
-    \item $B' = [\mathbf{b}_1, \mathbf{b}_2, \ldots, \mathbf{b}_{n-1}]$ is obtained by removing the last base vector from $B$
-    \item return $c\mathbf{b}_n + \text{NearestPlane}(B', \mathbf{t} - c\mathbf{b}_n)$
-\end{enumerate}
-
+\begin{algorithm}
+\caption{NearestPlane}
+\begin{algorithmic}[1]
+    \If{$B$ is empty}
+        \State return $\mathbf{0}$
+    \EndIf 
+    \State $B^\ast \leftarrow \text{GramSchmidt}(B)$
+    \State $c \leftarrow \lfloor \frac{\langle\mathbf{t}, \mathbf{b}_n^\ast\rangle}{\langle\mathbf{b}_n^\ast, \mathbf{b}_n^\ast\rangle} \rceil$, where $\mathbf{b}_n^\ast$ is the last base vector in $B^\ast$
+    \State return $c\mathbf{b}_n + \text{NearestPlane}([\mathbf{b}_1, \mathbf{b}_2, \ldots, \mathbf{b}_{n-1}], \mathbf{t} - c\mathbf{b}_n)$
+\end{algorithmic}
+\end{algorithm}
 
 
 Denote the output of this algorithm by $\mathbf{v}$, the key theorem about this algorithm is as follows:
@@ -398,11 +396,15 @@ $$
 
 The size reduction algorithm, which we will denote by $\operatorname{SizeReduce}$, takes a basis $B$ and returns a size-reduced basis $B^\prime$ such that the condition above is true. The procedure for $\operatorname{SizeReduce}$ is as follows:
 
-For each of $i \in \{2, 3, \ldots, n\}$
-\begin{enumerate}
-    \item $\mathbf{v} \in \mathcal{L}([\mathbf{b}_1, \ldots, \mathbf{b}_{i-1}]) \leftarrow \operatorname{NearestPlane}([\mathbf{b}_1, \ldots, \mathbf{b}_{i-1}], \mathbf{b}_i - \mathbf{b}_i^\ast)$
-    \item substitute $\mathbf{b}_i$ with $\mathbf{b}_i - \mathbf{v}$, then update $B$ and $B^\ast$
-\end{enumerate}
+\begin{algorithm}
+\caption{SizeReduce}
+\begin{algorithmic}[1]
+    \For{$i \in \{2, 2, \ldots, n\}$}
+        \State $\mathbf{v} \in \mathcal{L}([\mathbf{b}_1, \ldots, \mathbf{b}_{i-1}]) \leftarrow \operatorname{NearestPlane}([\mathbf{b}_1, \ldots, \mathbf{b}_{i-1}], \mathbf{b}_i - \mathbf{b}_i^\ast)$
+        \State $\mathbf{b}_i \leftarrow \mathbf{b}_i - \mathbf{v}$
+    \EndFor
+\end{algorithmic}
+\end{algorithm}
 
 Recall the result of the nearest plane algorithm we know that:
 
@@ -437,16 +439,123 @@ $$
 The LHS of the equation above is exactly $\mu_{i,j}$. Thus we have satisfied the first condition of $\delta$-LLL reduced basis. In addition, because $\mathbf{v} \in \mathcal{L}([\mathbf{b}_1, \ldots, \mathbf{b}_{i-1}])$, the substitution $\mathbf{b}_i \leftarrow \mathbf{b}_i - \mathbf{v}$ is equivalent to adding onto the substituted basis a linear combination of other basis vectors, which corresponds to a unimodular matrix multiplication and thus does not change the lattice itself before or after the size reduction.
 
 \subsection{The LLL basis reduction algorithm}
-By applying $\operatorname{SizeReduce}$ to the basis, we can obtain a size-reduced basis that satisfy the first condition of $\delta$-LLL reduced form, but there is no guarantee that the second condition will hold. Pairs of adjacent basis that violate the second condition can be swapped so that the swapped pair does not violate the second condition. Because swapping columns is equivalent to right multiply by unimodular matrix, the lattice it preserved, but the first condition will not hold, so we will need to apply $\operatorname{SizeReduce}$ again.
+Now that we have the $\operatorname{SizeReduce}$ algorithm which takes a basis and transforms it into a size-reduced basis for the same lattice that satisfies the first condition of a $\delta$-LLL reduced basis, it remains somehow transform the basis to satisfy the second condition:
 
-The LLL basis reduction algorithm is exactly a repetition of alternating between size reduction and column swapping. For $\frac{1}{4} < \delta < 1$, it can be proved that the number of iteration is bounded by some polynomial factors of the dimension $n$ of the lattice. For $\delta = 1$ we will obtain the best possible reduction, but there is no guarantee that the basis reduction will run in polynomial time.
+$$
+\delta \Vert \pi_i(\mathbf{b}_i) \Vert^2 \leq \Vert \pi_i(\mathbf{b}_{i+1})\Vert^2
+$$
+
+It turns out that such transformation is rather simple: if there is some $i$ such that the condition above does not hold, then we can simply swap $\mathbf{b}_i$ and $\mathbf{b}_{i+1}$, and the condition will hold. To see that it works, denote the swapped basis vectors by $\mathbf{b}_i^\prime = \mathbf{b}_{i+1}$, $\mathbf{b}_{i+1}^\prime = \mathbf{b}_{i}$. First observe that the function $\pi_i: \mathbf{x} \mapsto \sum_{j\geq i}\frac{\langle \mathbf{x}, \mathbf{b}_j^\ast \rangle}{\langle \mathbf{b}_j^\ast, \mathbf{b}_j^\ast \rangle}\mathbf{b}_j^\ast$ is not changed after the swap because it is still projecting $\mathbf{x}$ onto the same set of orthogonal basis, and the set of orthogonal basis is unchanged by the swap.
+
+if the condition does not hold, then $\delta\Vert\pi_i(\mathbf{b}_i)\Vert^2 > \Vert\pi_i(\mathbf{b}_{i+1})\Vert^2$, and we have
+
+$$
+\begin{aligned}
+\delta \Vert\pi_i(\mathbf{b}_i^\prime)\Vert^2
+&= \delta \Vert\pi_i(\mathbf{b}_{i+1})\Vert^2 \\
+&< \delta \cdot \delta\Vert\pi_i(\mathbf{b}_i)\Vert^2 \\
+&\leq \Vert\pi_i(\mathbf{b}_i)\Vert^2 \\
+&= \Vert\pi_i(\mathbf{b}_{i+1}^\prime)\Vert^2
+\end{aligned}
+$$
+
+So after the swap, the condition will hold. We know that swapping columns preserves the lattice, so we can define a second algorithm $\operatorname{ColumnSwap}$ that takes a basis $B$ and transforms it into a second basis of the same lattice that satisfies the second condition of $\delta$-LLL reduced basis:
+
+\begin{algorithm}
+\caption{ColumnSwap}
+\begin{algorithmic}[1]
+    \For{$i \in \{1, 2, \ldots, n-1\}$}
+        \If{$\delta\Vert\pi_i(\mathbf{b}_i)\Vert^2 > \Vert \pi_i(\mathbf{b}_{i+1}) \Vert^2$}
+            \State $\mathbf{b}_i \leftarrow \mathbf{b}_{i+1}$
+            \State $\mathbf{b}_{i+1} \leftarrow \mathbf{b}_{i}$
+        \EndIf
+    \EndFor
+\end{algorithmic}
+\end{algorithm}
+
+Unfortunately, after applying $\operatorname{ColumnSwap}$, the first condition no longer holds, so we will need to apply $\operatorname{SizeReduce}$ again. In fact, the LLL basis reduction algorithm is exactly repeatedly alternate between $\operatorname{ColumnSwap}$ and $\operatorname{SizeReduce}$.
+
+\begin{algorithm}
+\caption{LLLReduce}
+\begin{algorithmic}[1]
+    \While{$B$ is not $\delta$-LLL reduced}
+        \State $B \leftarrow \operatorname{SizeReduce}(B)$
+        \State $B \leftarrow \operatorname{ColumnSwap}(B)$
+    \EndWhile
+\end{algorithmic}
+\end{algorithm}
+
+We can easily see that if $\operatorname{LLLReduce}$ terminates, we will have a correctly reduced basis. It remains to show that $\operatorname{LLLReduce}$ will terminate in polynomial time (at least for when $\delta < 1$.
+
+To prove that $\operatorname{LLLReduce}$ will terminate in polynomial time, we define a positive integer quantity associated with a basis and show that each iteration of $\operatorname{SizeReduce}$ and $\operatorname{ColumnSwap}$ reduce this quantity by $\delta$.
+
+Recall that although determinant is not defined for non-square matrix, it is defined for (sub)lattice generated by sub-basis $B_k = [\mathbf{b}_1, \mathbf{b}_2, \ldots, \mathbf{b}_k] \in \mathbb{Z}^{n \times k}$ where $1 \leq k \leq n$:
+
+$$
+\det(\mathcal{L}(B_k)) = \prod_{i=1}^k \Vert \mathbf{b}_i^\ast \Vert = \sqrt{B_k^\intercal B_k}
+$$
+
+We define the "potential" of a full-rank basis $B = [\mathbf{b}_1, \mathbf{b}_2, \ldots, \mathbf{b}_n]$ by the product of determinants of sub-lattices generated by sub-basis $B_1, B_2, \ldots, B_n$:
+
+$$
+\mathcal{D} = \prod_{k=1}^n \det(\mathcal{L}(B_k))^2
+$$
+
+Based on the definition of lattice determinant above, we know that the square of the determinant of a lattice generated by integer basis is an integer, so their products must also be integer. Therefore, $\mathcal{D}$ is an integer.
+
+First observe that in $\operatorname{SizeReduce}$, the basis vector is changed by subtracting a linear combination of basis vectors BEFORE the changed basis vector. This means that after $\operatorname{SizeReduce}$, each of $B_k$ for $1\leq k \leq n$ still generates the same lattice, and the determinant of that lattice remains unchanged. In other words, $\operatorname{SizeReduce}$ does not change the value of $\mathcal{D}$.
+
+Second, for $k < i$, swapping column $\mathbf{b}_i$ with $\mathbf{b}_{i+1}$ does not affect the lattice generated by the partial basis $B_k$ because $B_k = \{\mathbf{b}_1, \ldots, \mathbf{b}_{i-1}\}$ does not contain the swapped columns anyways. On the other hand, for $k > i$, swapping column $\mathbf{b}_i$ with $\mathbf{b}_{i+1}$ also does not affect the lattice generated by the partial basis $B_k$ because it contains BOTH of the swapped column, and swapping column preserves the lattice.
+
+Therefore the only change to $\mathcal{D}$ when swapping $\mathbf{b}_i$ with $\mathbf{b}_{i+1}$ comes from the factor $\det(\mathcal{L}(B_i))$. Denote the potential of the basis $B$ after the swap by $\mathcal{D}^\prime$ then:
+
+$$
+\frac{\mathcal{D}}{\mathcal{D}^\prime} = \frac{
+    \det(\mathcal{L}([\mathbf{b}_1, \mathbf{b}_2, \ldots, \mathbf{b}_{i-1}, \mathbf{b}_{i}]))^2
+}{
+    \det(\mathcal{L}([\mathbf{b}_1, \mathbf{b}_2, \ldots, \mathbf{b}_{i-1}, \mathbf{b}_{i+1}]))^2
+}
+$$
+
+Recall that the determinant of a lattice is the product of the orthogonalized basis vectors. The first $i-1$ terms are identical between the two basis so they all cancel out. The $i$-th term on the numerator is exactly $\mathbf{b}_i^\ast$, while the $i$-th term on the denominator is as follows:
+
+$$
+\begin{aligned}
+\text{i-th term in denominator} &= \mathbf{b}_{i+1} - \sum_{j < i} \mu_{i+1, j}\mathbf{b}_j^\ast \\
+&= \mathbf{b}_{i+1} - (\sum_{1 \leq j \leq n} \mu_{i+1, j}\mathbf{b}_j^\ast  - \sum_{j \geq i} \mu_{i+1, j}\mathbf{b}_j^\ast) \\
+&= \mathbf{b}_{i+1} - (\mathbf{b}_{i+1}  - \sum_{j \geq i} \mu_{i+1, j}\mathbf{b}_j^\ast) \\
+&= \sum_{j \geq i} \mu_{i+1, j}\mathbf{b}_j^\ast \\
+&= \pi_i(\mathbf{b}_{i+1})
+\end{aligned}
+$$
+
+Therefore we have:
+
+$$
+\frac{\mathcal{D}}{\mathcal{D}^\prime} = \frac{
+    \det(\mathcal{L}([\mathbf{b}_1, \mathbf{b}_2, \ldots, \mathbf{b}_{i-1}, \mathbf{b}_{i}]))^2
+}{
+    \det(\mathcal{L}([\mathbf{b}_1, \mathbf{b}_2, \ldots, \mathbf{b}_{i-1}, \mathbf{b}_{i+1}]))^2
+} = \frac{\Vert\mathbf{b}_i^\ast\Vert^2}{\Vert\pi_i(\mathbf{b}_{i+1})\Vert^2}
+= \frac{\Vert\pi_i(\mathbf{b}_{i})\Vert^2}{\Vert\pi_i(\mathbf{b}_{i+1})\Vert^2}
+$$
+
+Because we only swap when $\delta \Vert \pi_i(\mathbf{b}_i) \Vert^2 > \Vert \pi_i(\mathbf{b}_{i+1}) \Vert^2$, the quotient above satisfies:
+
+$$
+\frac{\mathcal{D}}{\mathcal{D}^\prime} 
+= \frac{\Vert\pi_i(\mathbf{b}_{i})\Vert^2}{\Vert\pi_i(\mathbf{b}_{i+1})\Vert^2}
+> \frac{1}{\delta}
+$$
+
+Which means that $\mathcal{D}^\prime < \delta \mathcal{D}$. $\blacksquare$
 
 \section{The Goldreich-Goldwasser-Halevi trapdoor}
 One class of constructing lattice trapdoor uses a pair of public and secret basis for the same lattice. Since the two basis generate the same lattice, they are equally good at mapping integer coordinates into a lattice point. On the other hand, the secret basis is very "good" and can be used to efficiently find the closest lattice point, but the public basis is very "bad" at recovering the closest lattice point.
 
 One of the earliest instances of such class of lattice trapdoor is proposed by Goldreich, Goldwasser, and Halevi in their 1997 paper \textit{"Public-key cryptosystem from lattice reduction problem"}. At a high level, the trapdoor is parameterized by three items: a "bad" basis $B$, a "good" basis $R$, and an error bound $\sigma$. In the forward direction, the function maps a pair of lattice coordinate $\mathbf{v} \in \mathbb{Z}^n$ and a small error vector $\mathbf{e} \leftarrow \{ -\sigma, \sigma \}^n$ to $\mathbf{x} = B\mathbf{v} + \mathbf{e} \in \mathbb{R}^n$. If the parameters are generated correctly, then the closest lattice point in $\mathcal{L}(B)$ is exactly $B\mathbf{v}$.
 
-Inverting the function involves recovering the integer coordinate $\mathbf{v}$ (or the error vector $\mathbf{e}$, since recovering one of them automatically gives you the other). However, the inversion is exactly the cloest vector problem (CVP), and should be hard if $B$ is a sufficiently bad basis. On the other hand, since $R$ is a good basis, finding the closest vector point should be "easy" if we have $R$.
+Inverting the function involves recovering the integer coordinate $\mathbf{v}$ (or the error vector $\mathbf{e}$, since recovering one of them automatically gives you the other). However, the inversion is exactly the closest vector problem (CVP), and should be hard if $B$ is a sufficiently bad basis. On the other hand, since $R$ is a good basis, finding the closest vector point should be "easy" if we have $R$.
 
 From here, GGH '97 proposed a public-key cryptosystem as well as a digital signature scheme that uses such a trapdoor construction, and the security of the two schemes naturally rest on the hardness of the underlying hard lattice problem.
 
