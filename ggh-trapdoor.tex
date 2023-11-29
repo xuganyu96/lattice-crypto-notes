@@ -1,0 +1,83 @@
+\section{The Goldreich-Goldwasser-Halevi trapdoor}
+
+One class of constructing lattice trapdoor uses a pair of public and secret basis for the same lattice. Since the two basis generate the same lattice, they are equally good at mapping integer coordinates into a lattice point. On the other hand, the secret basis is very "good" and can be used to efficiently find the closest lattice point, but the public basis is very "bad" at recovering the closest lattice point.
+
+One of the earliest instances of such class of lattice trapdoor is proposed by Goldreich, Goldwasser, and Halevi in their 1997 paper \textit{"Public-key cryptosystem from lattice reduction problem"}\cite{goldreich1997public}. At a high level, the trapdoor is parameterized by three items: a "bad" basis $B$, a "good" basis $R$, and an error bound $\sigma$. In the forward direction, the function maps a pair of lattice coordinate $\mathbf{v} \in \mathbb{Z}^n$ and a small error vector $\mathbf{e} \leftarrow \{ -\sigma, \sigma \}^n$ to $\mathbf{x} = B\mathbf{v} + \mathbf{e} \in \mathbb{R}^n$. If the parameters are generated correctly, then the closest lattice point in $\mathcal{L}(B)$ is exactly $B\mathbf{v}$.
+
+Inverting the function involves recovering the integer coordinate $\mathbf{v}$ (or the error vector $\mathbf{e}$, since recovering one of them automatically gives you the other). However, the inversion is exactly the closest vector problem (CVP), and should be hard if $B$ is a sufficiently bad basis. On the other hand, since $R$ is a good basis, finding the closest vector point should be "easy" if we have $R$.
+
+From here, GGH '97 proposed a public-key cryptosystem as well as a digital signature scheme that uses such a trapdoor construction, and the security of the two schemes naturally rest on the hardness of the underlying hard lattice problem.
+
+\subsection{The trapdoor scheme}
+The GGH trapdoor scheme contains four components:
+
+\begin{enumerate}
+    \item \textbf{Parameter generation} The main security parameter in this scheme is the number of dimensions $n$ of the lattice. In the original paper, the authors claimed $n \approx 150$ is sufficient for making inverting the function without the private basis hard and $n \approx 250$ should be a safe choice for the foreseeable future.
+    \item \textbf{Key generation} First generate the "good" basis $R \in \mathbb{R}^{n \times n}$, then apply some (unimodular) transformation to $R$ to obtain the "bad" basis $B$. The error bound $\sigma > 0 \in \mathbb{R}$ is dependent on the choice of $R$ and the choice of "probability of inversion error" $\epsilon >= 0$, which will be discussed in a later section.
+    \item \textbf{Forward evaluation} $f_{B}(\mathbf{v}, \mathbf{e}) = B\mathbf{v} + \mathbf{e}$, where $\mathbf{v} \in \{-n, \ldots, n\}^n$ and $\mathbf{e} \in \{-\sigma, \sigma\}$. According to the authors, the choice of bounds for values of $\mathbf{v}$ is arbitrary and not a significant contributor to the overall security of the scheme.
+    \item \textbf{Inversion} Denote the output by $\mathbf{x} = f_{B}(\mathbf{v}, \mathbf{e})$, first attempt to recover the integer coordinate $\mathbf{v} \leftarrow B^{-1}R\lfloor R^{-1}\mathbf{x} \rceil$. From here it is trivial to recompute the lattice point $B\mathbf{v}$ and recover the error term $\mathbf{e} = \mathbf{x} - B\mathbf{v}$.
+\end{enumerate}
+
+\subsection{Correctness of trapdoor inversion}
+Without the error term, the function $f_B: \mathbf{v} \mapsto B\mathbf{v}$ is trivially invertible with either choice of the basis. However, with a non-zero the error term, the quality of the basis makes a substantial difference in how much error can be added before the points can no longer be recovered.
+
+Observe the calculation used for recovering the integer coordinate $\mathbf{v}$:
+
+$$
+\begin{aligned}
+\lfloor R^{-1}\mathbf{x} \rceil &= B^{-1}R\lfloor R^{-1}(B\mathbf{v} + \mathbf{e})\rceil \\
+&= B^{-1}R\lfloor R^{-1}B\mathbf{v} + R^{-1}\mathbf{e}\rceil
+\end{aligned}
+$$
+
+Since $R, B$ are related by a unimodular matrix and $\mathbf{v}$ is an integer vector, $R^{-1}B\mathbf{v}$ is an integer vector and can be moved out of the "rounding" operator:
+
+$$
+\begin{aligned}
+\lfloor R^{-1}\mathbf{x} \rceil &= B^{-1}RR^{-1}B\mathbf{v} + B^{-1}R\lfloor R^{-1}\mathbf{e}\rceil \\
+&= \mathbf{v} + B^{-1}R\lfloor R^{-1}\mathbf{e} \rceil
+\end{aligned}
+$$
+
+Since $B^{-1}R$ is also a unimodular matrix, we can conclude that the equation above is successful at recovering the original coordinate if and only if $R^{-1}\mathbf{e} = \mathbf{0}$.
+
+To guarantee that inversion error never happens, we can bound the error term $\sigma > 0$ by $\frac{1}{2\rho}$, where $\rho$ is maximal $L_1$ norm among the rows of $R^{-1}$. This bound is excessively conservative, however, and we might want to relax the bound to enhance the security of the trapdoor scheme (larger error terms makes it harder to invert the function using only the public basis). The authors provided one such relaxation based on the Hoeffding inequality. This relaxation is stated as follows
+
+$$
+P(\text{inversion error}) \leq 2n \cdot \exp(-\frac{1}{8\sigma^2\gamma^2})
+$$
+
+Where $\gamma = \sqrt{n} \cdot \max(L_\infty \text{ norm of rows of } R^{-1})$. Simple reorganization of inequality shows that to bound the inversion error by $\epsilon$, the error term will be bounded by $\sigma \leq (\gamma\sqrt{8\ln{2n/\epsilon}})^{-1}$.
+
+\subsection{Generating the pair of basis}
+The authors described two ways of generating the private basis. The first way is to sample each coordinate of $R \in \mathbb{R}^{n \times n}$ from a uniform distribution on $\{-l, -l + 1, \ldots, l-1, l\}$, where according to the authors, the value of the bound $l$ has negligible impact on the quality of the generated basis (the authors chose $\pm 4$ in their implementation). A second method is to first generate a square lattice $L(kI)$ for some positive integer $k$, then add a small amount of noise $R^\prime \in \{-l, \ldots, l\}^{n \times n}$. With this method of sampling the private basis, it is important to balance the choice of values between $k$ and $l$, where a larger $k$ value gives a more orthogonal basis, but also weakens the security of the trapdoor function by making it easier to reduce the public basis into a short, orthogonal basis using basis reduction algorithm.
+
+The authors also described two methods for generating the public basis $B$ from the private basis. The first method is to directly generate random unimodular matrix $T$ and set $B = TR$, then repeat until satisfactory. A second method is to repeatedly apply column mixing, where at each mixing a column of $R$ is chosen, and a linear combination of all other columns is added to the chosen column.
+
+Mathematically, the two methods are equivalent. However, in implemenetation, we would like the values of $B$ to be smaller for space efficiency while maintaining sufficient security so that the function cannot be easily inverted using the public basis alone and so that $B$ cannot be easily reduced using basis reduction algorithm. The authors preferred column mixing for requiring less computation and for producing public basis $B$ with smaller values.
+
+Unfortunately, there is no known rigorous description of how skewed $B$ needs to be for the trapdoor function to be secure. The authors relied on experimental methods and determined that for $n \approx 100$, $2n$ steps of column mixing is enough to render LLL basis reduction ineffective at meaningfully improving the quality of the public basis $B$.
+
+In 2001, Daniele Micciancio proposed to generate the public basis by computing the Hermite normal form of the private basis\cite{micciancio2001improving}. From a high level, Hermite normal form provides an optimal security guarantee because it is an invariant of the lattice, so a public basis computed from the Hermite normal form is guaranteed to give exactly zero information about the private basis. We will not discuss the details of Hermite normal in this survey.
+
+\subsection{Security of the trapdoor}
+It is easy to see that if an adversary can invert the trapdoor function without with only the public basis, then the adversary has found the closest vector $\mathbf{v} \in \mathcal{L}$ to the target $\mathbf{x}$. In other words, the adversary can solve the (approximate) closest vector problem.
+
+As discussed in section 2, a polynomial-time LLL basis reduction algorithm only provides an approximation within an exponential factor; while it is possible to achieve approximation within a polynomial factor, the basis reduction algorithm is no longer guaranteed to run in polynomial time. In addition, the complexity of both LLL basis reduction and Babai's nearest plane algorithm scales exponentially with the security parameter $n$, and in experimental settings, the authors found that for $n \geq 100$ the workload for these algorithms starts becoming infeasible. The authors speculated that $n = 250$ should provide sufficient security in future production usage.
+
+
+\subsection{Public key cryptosystem}
+The authors of the GGH paper presented a public key cryptosystem that makes direct usage of the trapdoor \cite{goldreich1997public}. The main security parameter is $n$ the number of dimension of the lattice. The secret key is the short, orthogonal basis $R$ generated by applying a small amount of noise to a truly orthogonal basis. The public key is the long basis $B$ generated by applying column mixing to $R$. The encryption function is exactly the evaluation of the trapdoor, and the decryption function is the inversion of the trapdoor.
+
+What remains is the question of "where to encode the message", for which the authors discussed a few options:
+
+\begin{enumerate}
+    \item Use a generic encoding that takes advantage of the hard-core bits of the one-way function, although this encoding is inefficient (it only encodes $\log{n}$ bits at a time), and it does not take advantage of any specific features of the trapdoor construction itself
+    \item Directly encode the message into a lattice point $\mathbf{v}$. However, this scheme is insecure because an adversary can compute $B^{-1}\mathbf{c} = \mathbf{v} + B^{-1}\mathbf{e}$, where $B^{-1}\mathbf{e}$ might not be big enough to obscure all information about $\mathbf{v}$, which means this adversary can obtain partial information about the message
+    \item Encode the message into the least significant bits of each entry of $\mathbf{v}$ and choose all other bits randomly. The authors argued that with appropriate choice of probability distribution for the error term $\mathbf{e}$, no polynomial-time adversaries will be able to distinguish the parity of the entries of the ciphertext from truly random, thus achieving IND-CPA security.
+\end{enumerate}
+
+Later Micciancio also proposed to encode the message in the error term $\mathbf{e}$, and instead chooses the lattice point $\mathbf{v}$ at random \cite{micciancio2001improving}. However, this scheme is not trivial because special care is needed for security requirement, and we also have the problem of a lattice being a countably infinite set, making defining probability distribution a non-trivial problem.
+
+\subsection{Digital signature}
+The GGH trapdoor is also suitable for a digital signature: the message is an arbitrary point in the linear span of the good basis, and the signature is the (approximate) closest lattice point, which can be efficiently computed using the good basis $R$. The verifier checks that the signature is valid by first using the public basis to verify that the signature is a lattice point, then computing the norm between the signature and the message to check that the distance is sufficiently small.
