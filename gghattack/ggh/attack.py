@@ -67,15 +67,17 @@ def gradient_descent(
         w = w_new
         iter += 1
 
-def simulate_attack(lattice_dim: int, sample_size: int):
+def simulate_attack(
+    lattice_dim: int,
+    sample_size: int,
+    descent_delta = 0.7,
+):
     """Simulate a cryptanalysis. return the true secret basis and the 
     approximated/learned secret basis
     """
     sk = SecretKey.generate_sk(lattice_dim)
     sample_pairs = generate_pairs(sample_size, sk)
     samples = [(sigma - m) * 2 for (m, sigma) in sample_pairs]
-    # sample_xs = [sample[0] for sample in samples]
-    # sample_ys = [sample[1] for sample in samples]
     samples_sym = Matrix(np.array(samples).astype(int))
     approx_covariance = (
         samples_sym.transpose() * samples_sym / samples_sym.shape[0] * 3
@@ -86,11 +88,11 @@ def simulate_attack(lattice_dim: int, sample_size: int):
 
     approx_sk = []
     for w_init in np.eye(lattice_dim):
-        approx_cube_base = gradient_descent(cube_samples, 0.1, w_init)
+        approx_cube_base = gradient_descent(cube_samples, descent_delta, w_init)
         v = np.array(
             approx_cholesky.evalf().inv().transpose(), dtype=float
         ).dot(approx_cube_base)
         approx_sk.append(np.round(v))
     approx_sk = LatticeBasis(np.array(approx_sk).transpose())
 
-    return sk, approx_sk
+    return sk, approx_sk, samples
