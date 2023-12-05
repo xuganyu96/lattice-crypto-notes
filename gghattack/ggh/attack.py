@@ -1,6 +1,7 @@
 import time
 import numpy as np
-from .signature import SecretKey
+from sympy import Matrix
+from .signature import SecretKey, generate_keypair, LatticeBasis
     
 
 def generate_pairs(sample_size: int, sk: SecretKey, maxval: int=100000):
@@ -13,7 +14,7 @@ def generate_pairs(sample_size: int, sk: SecretKey, maxval: int=100000):
         sigma = sk.cvp_with_rounding(m)
         pairs.append((m, sigma))
     dur = time.monotonic() - start
-    print(f"Generated {sample_size} message-signature pairs in {dur:.2f} seconds")
+    # print(f"Generated {sample_size} message-signature pairs in {dur:.2f} seconds")
 
     return pairs
 
@@ -65,3 +66,31 @@ def gradient_descent(
             return w
         w = w_new
         iter += 1
+
+def simulate_attack(lattice_dim = 4):
+    """Simulate a cryptanalysis. return the true secret basis and the 
+    approximated/learned secret basis
+    """
+    pk, sk = generate_keypair(lattice_dim)
+    sample_pairs = generate_pairs(10000, sk)
+    samples = [(sigma - m) * 2 for (m, sigma) in sample_pairs]
+    sample_xs = [sample[0] for sample in samples]
+    sample_ys = [sample[1] for sample in samples]
+    samples_sym = Matrix(np.array(samples).astype(int))
+    approx_covariance = (
+        samples_sym.transpose() * samples_sym / samples_sym.shape[0] * 3
+    )
+    approx_cholesky = approx_covariance.inv().cholesky(hermitian=False)
+    cube_samples_sym = samples_sym * approx_cholesky
+    cube_samples = np.array(cube_samples_sym.evalf()).astype(float)
+
+    approx_sk = []
+    for w_init in np.eye(lattice_dim):
+        approx_cube_base = gradient_descent(cube_samples, 0.1, w_init)
+        v = np.array(
+            approx_cholesky.evalf().inv().transpose(), dtype=float
+        ).dot(approx_cube_base)
+        approx_sk.append(np.round(v))
+    approx_sk = LatticeBasis(np.array(approx_sk).transpose())
+
+    return sk, approx_sk
