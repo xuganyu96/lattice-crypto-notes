@@ -1,13 +1,19 @@
-from sympy import randMatrix
-from .signature import sign, verify
+import time
+import numpy as np
+from .signature import SecretKey
+    
 
-def generate_pairs(pk, sk, radius, ndim, npairs, val_limits=99999):
+def generate_pairs(sample_size: int, sk: SecretKey, maxval: int=100000):
+    """Generate a large number of message, signature pairs
+    """
     pairs = []
-    while len(pairs) < npairs:
-        m = randMatrix(ndim, 1, min=-val_limits, max=val_limits)
-        sigma = sign(m, sk)
-        verified = verify(m, sigma, pk, radius)
-        if verified:
-            pairs.append((m, sigma))
+    start = time.monotonic()
+    while len(pairs) < sample_size:
+        m = np.random.randint(low=0, high=maxval, size=(sk.dim,))
+        sigma = sk.cvp_with_rounding(m)
+        pairs.append((m, sigma))
+    dur = time.monotonic() - start
+    print(f"Generated {sample_size} message-signature pairs in {dur:.2f} seconds")
 
     return pairs
+

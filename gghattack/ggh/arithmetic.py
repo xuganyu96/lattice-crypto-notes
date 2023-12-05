@@ -56,3 +56,12 @@ def nearest_plane(
         ),
         np.array([c])
     ]).astype(int)
+
+def cvp_round(
+    target: np.ndarray,
+    basis: np.ndarray,
+) -> np.ndarray:
+    """Return the coordinate of the lattice point v such that (target - v) is
+    in the centered fundamental parallelpiped
+    """
+    return np.around(np.linalg.inv(basis).dot(target))
