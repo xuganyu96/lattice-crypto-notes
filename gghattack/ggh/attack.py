@@ -67,15 +67,15 @@ def gradient_descent(
         w = w_new
         iter += 1
 
-def simulate_attack(lattice_dim = 4):
+def simulate_attack(lattice_dim: int, sample_size: int):
     """Simulate a cryptanalysis. return the true secret basis and the 
     approximated/learned secret basis
     """
-    pk, sk = generate_keypair(lattice_dim)
-    sample_pairs = generate_pairs(10000, sk)
+    sk = SecretKey.generate_sk(lattice_dim)
+    sample_pairs = generate_pairs(sample_size, sk)
     samples = [(sigma - m) * 2 for (m, sigma) in sample_pairs]
-    sample_xs = [sample[0] for sample in samples]
-    sample_ys = [sample[1] for sample in samples]
+    # sample_xs = [sample[0] for sample in samples]
+    # sample_ys = [sample[1] for sample in samples]
     samples_sym = Matrix(np.array(samples).astype(int))
     approx_covariance = (
         samples_sym.transpose() * samples_sym / samples_sym.shape[0] * 3
