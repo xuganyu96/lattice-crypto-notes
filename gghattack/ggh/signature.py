@@ -24,10 +24,17 @@ class LatticeBasis:
         self.vectors_inv = np.linalg.inv(vectors)
         self.ortho_defect = ortho_defect(vectors)
 
-    def iter_base_vectors(self):
-        """Iterate through the column vectors of self.vectors"""
+    def iter_base_vectors(self, take: int | None = None):
+        """Iterate through the column vectors of self.vectors
+
+        If take is supplied, then only yield up to the first (take) vectors
+        """
+        cnt = 0
         for i in range(self.vectors.shape[1]):
+            if (take is not None) and (cnt >= take):
+                return
             yield self.vectors[:, i]
+            cnt += 1
 
     def to_sympy_matrix(self):
         """Convenient function that returns a copy of self.vectors as sympy
