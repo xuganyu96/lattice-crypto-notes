@@ -5,6 +5,9 @@
 \usepackage{algorithm}
 \usepackage{algpseudocode}
 
+\usepackage{graphicx}
+\graphicspath{ {./imgs/} }
+
 % Theorems numbered within sections
 \newtheorem{theorem}{Theorem}[section]
 % Lemmas share numbering with theorems
@@ -69,6 +72,7 @@ $$
 % \input{preliminaries.tex}
 \input{basis-reduction.tex}
 \input{ggh-trapdoor.tex}
+\input{gghattack.tex}
 
 \section{Conclusion and final comments}
 In this project, we reviewed some fundamental results of lattices, analyzed the difficulty of hard lattice problems and the efficiency of their best known solutions. We then discussed a lattice trapdoor construction that takes advantage of an exponential gap between short basis and long basis in their ability to solve the closest vector problem, and applied the trapdoor to build a public key cryptosystem and a digital signature scheme.
