@@ -1,5 +1,4 @@
 import argparse
-import numpy as np
 from ggh.attack import simulate_attack
 
 parser = argparse.ArgumentParser(
