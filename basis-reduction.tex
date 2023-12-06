@@ -94,7 +94,7 @@ The size reduction algorithm, which we will denote by $\operatorname{SizeReduce}
 \begin{algorithm}
 \caption{SizeReduce}
 \begin{algorithmic}[1]
-    \For{$i \in \{2, 2, \ldots, n\}$}
+    \For{$i \in \{1, 2, \ldots, n\}$}
         \State $\mathbf{v} \in \mathcal{L}([\mathbf{b}_1, \ldots, \mathbf{b}_{i-1}]) \leftarrow \operatorname{NearestPlane}([\mathbf{b}_1, \ldots, \mathbf{b}_{i-1}], \mathbf{b}_i - \mathbf{b}_i^\ast)$
         \State $\mathbf{b}_i \leftarrow \mathbf{b}_i - \mathbf{v}$
     \EndFor

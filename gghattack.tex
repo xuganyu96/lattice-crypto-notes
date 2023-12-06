@@ -35,7 +35,7 @@ Learning the basis of a hypercube can be efficiently done through a gradient des
 Gradient descent on the fourth moment of the hypercube is an appropriate algorithm due to the following lemma:
 
 \begin{lemma}
-    Given basis $V = [\mathbf{v}_1, \ldots, \mathbf{v}_n] \in \mathbb{R}^{n \times n}$ of a unit hypercube, there exists a unique global minimum achieved at $\pm\mathbf{v}_1, \pm\mathbf{v}_2, \ldots, \pm\mathbf{v}_n$ and no other local minimum
+    Given basis $V = [\mathbf{v}_1, \ldots, \mathbf{v}_n] \in \mathbb{R}^{n \times n}$ of a unit hypercube, there exists a unique global minimum of $\operatorname{mom}_{V, 4}(\mathbf{w})$ achieved at $\pm\mathbf{v}_1, \pm\mathbf{v}_2, \ldots, \pm\mathbf{v}_n$ and no other local minimum
 \end{lemma}
 
 \begin{algorithm}
@@ -71,6 +71,33 @@ Gradient descent on the fourth moment of the hypercube is an appropriate algorit
 The GGH signature scheme and the HPP learning algorithm were implemented using Python. The matrix arithmetics, including dot products, matrix inversion, and Cholesky factorization, are all computed using numpy 1.26.2. A demo of the cryptanalysis is available on GitHub \footnote{https://github.com/xuganyu96/lattice-crypto-notes/blob/main/gghattack/demo.ipynb}.
 
 In this implementation, the secret basis is generated using the formula $R \leftarrow kI + R^\prime$, where $R^\prime$ is uniformly sampled from $\{-l, -l + 1, \ldots, l-1, l\}^{n \times n}$, $l = 100$, and $k = \lfloor \sqrt{n} \cdot l \rceil$. Messages are uniformly sampled from $\mathbf{m} \leftarrow \{-99999, \ldots, 99999\}^n$, and signatures are computed using simple rounding algorithm $\sigma \leftarrow R \lfloor R^{-1}\mathbf{m} \rceil$. Note that we can also use nearest plane to compute the signature, although with that we will be learning the basis of the orthogonal parallelepiped spanned by $B^\ast$.
+
+We take advantage of the following lemma when approximating the Gram matrix:
+
+\begin{lemma}
+    Given a parallelepiped $\mathcal{P}(V)$ and a uniformly sampled vector $\mathbf{v} \leftarrow \mathcal{P}(v)$:
+
+    $$
+    \exp[\mathbf{v}\mathbf{v}^\intercal] = \frac{1}{3}VV^\intercal
+    $$
+\end{lemma}
+
+We also compute the moment and its gradient using the samples through the following approximation:
+
+$$
+\mathop{\text{mom}}_{V,k}(\mathbf{w}) \approx \frac{1}{n}\sum_{\mathbf{u} \in S} (\mathbf{u}^\intercal\mathbf{w})^k
+$$
+
+$$
+\frac{\partial}{\partial\mathbf{w}}
+\bigg\lbrack
+    \mathop{\text{mom}}_{V,k}(\mathbf{w})
+\bigg\rbrack
+\approx \frac{k}{n}
+\sum_{\mathbf{u} \in S} \bigg(
+(\mathbf{u}^\intercal\mathbf{w})^{k-1}\mathbf{u}
+\bigg)
+$$
 
 Following the recommendation of Nguyen and Regev, the rate of the gradient descent is set to $\delta = 0.7$. For initial positions of $\mathbf{w}$, we iterated through the columns of the identity matrix $I_n$, and we found that they each descended into a distinct basis. In other words, running gradient descent on each of these initial positions allowed us to approximate all secret basis vectors.
 
